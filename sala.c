@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <fcntl.h>
 
 #define MAX_CAPACITY 2000000 // Capacidas máxima permitida.
 #define MAX_LENGTH 34
@@ -146,6 +148,25 @@ void clear()
     while (getchar() != '\n');
 }
 
+int guardar_estado_sala(char* filename) {
+        FILE* file = fopen(filename, "w");
+        if (file == NULL) {
+            return -1;
+        }
+
+        // Write the capacity and occupied variables
+        fprintf(file, "%d %d\n", capacity, occupied);
+
+        // Write the state of each seat
+        for (int i = 0; i < capacity; i++) {
+            fprintf(file, "%d ", room[i]);
+        }
+        fprintf(file, "\n");
+
+        fclose(file);
+        return 0;
+    }
+
 #define MAX_LENGTH 34
 
 int main(int argc, char *argv[]) {
@@ -194,7 +215,9 @@ int main(int argc, char *argv[]) {
             printf("======================\nROOM %s\n======================\n", roomName);
         } else if (!strcmp(commandStr, "quit\n")) {
             printf("%s\n", "Cerrando sala...\n");
+            
             elimina_sala();
+
             break;
         } else {
 nonav:
