@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <fcntl.h>
 
 #define MAX_CAPACITY 2000000 // Capacidas máxima permitida.
 #define MAX_LENGTH 34
@@ -181,20 +182,17 @@ int main(int argc, char *argv[]) {
                 "Capacidad de la sala: %d\nAsientos ocupados: %d\nAsientos libres: %d\n",
                 capacidad_sala(), asientos_ocupados(), asientos_libres()
             );
-        } else if (!strcmp(commandStr, "cerrar_sala\n")) {
-            printf("%s\n", "Cerrando sala...\n");
-            elimina_sala();
-            break;
         } else if (!strcmp(commandStr, "help\n")) {
             for (int i = 0; i < commandsLength; i++) {
                 printf("----- %s", commands[i]);
             }
+        } else if (!strcmp(commandStr, "guardar_estado\n")) {
+            g
         } else if (!strcmp(commandStr, "clear\n")) {
             printf("\e[1;1H\e[2J");
             printf("======================\nROOM %s\n======================\n", roomName);
-        } else if (!strcmp(commandStr, "quit\n")) {
+        } else if (!strcmp(commandStr, "quit\n") || !strcmp(commandStr, "cerrar_sala\n")) {
             printf("%s\n", "Cerrando sala...\n");
-            elimina_sala();
             break;
         } else {
 nonav:
