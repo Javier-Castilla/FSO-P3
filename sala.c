@@ -151,25 +151,24 @@ void clear()
 int guardar_estado_sala(char* filename) {
         int fd = open(filename, O_WRONLY | O_CREAT);
 
-
         if (fd == -1) {
             return -1;
         }
-/*
-        // Write the capacity and occupied variables
-        fprintf(file, "%d %d\n", capacity, occupied);
+        write(fd, &capacity, sizeof(int));
+        write(fd, "\n", sizeof(char));
 
-        // Write the state of each seat
         for (int i = 0; i < capacity; i++) {
-            fprintf(file, "%d ", room[i]);
+            write(fd, &room[i], sizeof(int));
+            write(fd, "-", sizeof(char));
+            write(fd, estado_asiento(i), sizeof(int));
+            write(fd, "\n", sizeof(char));
         }
-        fprintf(file, "\n");
 
-        fclose(file);
-  */      return 0;
+        close(fd);
+        return 0;
     }
 
-    int recupera_estado_sala(const char* ruta_fichero) {
+/*    int recupera_estado_sala(const char* ruta_fichero) {
         FILE* file = fopen(ruta_fichero, "r");
         if (file == NULL) {
             return -1;
@@ -217,17 +216,16 @@ int guardar_estado_sala(char* filename) {
         fclose(file);
         return 0;
     }
-
-#define MAX_LENGTH 34
+*/
 
 int main(int argc, char *argv[]) {
     crea_sala(atoi(argv[1]));
     char *roomName = argv[2];
     printf("======================\nROOM %s\n======================\n", roomName);
-    char commands[7][50] = {"reserva <id-persona>\n", "libera <id_asiento>\n", "estado_asiento<id-asiento>\n", "estado_sala\n", "cerrar_sala\n", "clear\n", "quit\n", "guardar_estado\n",
-    "recuperar_estado\n", "guardar_estadoparcial\n", "recuperar_estadoparcial\n"};
+    char commands[11][100] = {"reserva <id-persona>\n", "libera <id_asiento>\n", "estado_asiento <id-asiento>\n", "estado_sala\n", "cerrar_sala\n", "clear\n", "quit\n", "guardar_estado <ruta_fichero>\n", 
+    "recuperar_estado <ruta_fichero>\n", "guardar_estadoparcial <ruta_fichero> <n_asientos> <id_asientos>\n", "recuperar_estadoparcial <ruta_fichero> <n_asientos> <id_asientos>\n"};
     int commandsLength = 11;
-    char command[50];
+    char command[100];
     char *commandStr, *arg;
 
     while (1) {
@@ -236,13 +234,12 @@ int main(int argc, char *argv[]) {
         commandStr = strtok(command, " ");
 
         arg = strtok(NULL, " ");
-        if (strtok(NULL, " ")) {
-            goto nonav;
-        }
 
         if (!strcmp(commandStr, "reserva")) {
+            if (strtok(NULL, " ") != NULL) goto nonav; // si tiene más argumentos, que salte directamente a nonav
             printf("Reservar el asiento: %d\nResultado de la reserva: %d\n", atoi(arg), reserva_asiento(atoi(arg)));
         } else if (!strcmp(commandStr, "libera")) {
+            if (strtok(NULL, " ") != NULL) goto nonav; // si tiene más argumentos, que salte directamente a nonav
             printf("Liberar el asiento: %d\nResultado de la liberación: %d\n", atoi(arg), libera_asiento(atoi(arg)));
         } else if (!strcmp(commandStr, "estado_asiento")) {
             printf(
@@ -258,19 +255,35 @@ int main(int argc, char *argv[]) {
             printf("%s\n", "Cerrando sala...\n");
             elimina_sala();
             break;
-        } else if (!strcmp(commandStr, "guardar_estado\n")) {
+        } else if (!strcmp(commandStr, "guardar_estado")) {
+            char* ruta_fichero = arg;
             if (guardar_estado_sala("estado_sala.txt") == -1) {
                 printf("Error al guardar el estado de la sala\n");
             }
-        } else if (!strcmp(commandStr, "recuperar_estado\n")) {
+        } else if (!strcmp(commandStr, "recuperar_estado")) {
+            char* ruta_fichero = arg;
+            /*if (recupera_estado_sala("estado_sala.txt") == -1) {
+                printf("Error al recuperar el estado de la sala\n");
+            }*/
 
+        } else if (!strcmp(commandStr, "guardar_estadoparcial")) {
+            char* ruta_fichero = arg;
+            int n_asientos = atoi(strtok(NULL, " "));
+            for (int i=0; i < n_asientos; i++) {
+                int id_asientos = atoi(strtok(NULL, " "));
+            }
+            int id_asientos[n_asientos];
+            for (int i = 0; i < n_asientos; i++) {
+                id_asientos[i] = atoi(strtok(NULL, " "));
+            }
+            /*if (guarda_estadoparcial_sala("estado_parcial.txt", n_asientos, id_asientos) == -1) {
+                printf("Error al guardar el estado parcial de la sala\n");
+            }*/
 
-        } else if (!strcmp(commandStr, "guardar_estadoparcial\n")) {
-
-
-        } else if (!strcmp(commandStr, "recuperar_estadoparcial\n")) {
+        } else if (!strcmp(commandStr, "recuperar_estadoparcial")) {
             
-        
+            printf("Recuperar estado parcial de la sala\n");
+
         }
         else if (!strcmp(commandStr, "help\n")) {
             for (int i = 0; i < commandsLength; i++) {
@@ -284,7 +297,7 @@ int main(int argc, char *argv[]) {
             elimina_sala();
             break;
         } else {
-nonav:
+            nonav:
             printf("Comando no reconocido\n");
         }
     }
