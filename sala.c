@@ -9,6 +9,7 @@
 int capacity = -1;           // Capacidad de la sala actual. -1 indica que no existe sala.
 int occupied = 0;            // Número de asientos ocupados.
 int* room;                   // Representación de la sala.
+char jump = '\n';
 
 /**
  * Se crea una sala con la capacidad indicada.
@@ -149,19 +150,24 @@ void clear()
 }
 
 int guardar_estado_sala(const char* filename) {
-    int fd = open(filename, O_WRONLY | O_CREAT, 0666);
+    int fd = open(filename, O_WRONLY | O_CREAT, 0644);
 
     if (fd == -1) {
         return -1;
     }
-    write(fd, &capacity, sizeof(int));
-    write(fd, "\n", sizeof(char));
+    char p[10];  
+    sprintf(p, "%d", capacity);
+    write(fd, p, strlen(p));
+    write(fd, &jump, 1);
 
     for (int i = 0; i < capacity; i++) {
-        write(fd, &i, sizeof(int));
-        write(fd, "-", sizeof(char));
-        write(fd, &room[i], sizeof(int));
-        write(fd, "\n", sizeof(char));
+        char p[10];  
+        sprintf(p, "%d", i);
+        write(fd, p, strlen(p));
+        //write(fd, "-", 1);
+        sprintf(p, "%d", room[i]);
+        write(fd, p, strlen(p));
+        write(fd, &jump, 1);
     }
 
     close(fd);
@@ -258,8 +264,8 @@ int main(int argc, char *argv[]) {
             elimina_sala();
             break;
         } else if (!strcmp(commandStr, "guardar_estado")) {
-            char* ruta_fichero = arg;
-            if (guardar_estado_sala("estado_sala.txt") == -1) {
+            char* ruta_fichero = strtok(arg, "\n");
+            if (guardar_estado_sala(ruta_fichero) == -1) {
                 printf("Error al guardar el estado de la sala\n");
             }
         } else if (!strcmp(commandStr, "recuperar_estado")) {
