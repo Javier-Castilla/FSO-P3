@@ -148,25 +148,27 @@ void clear()
     while (getchar() != '\n');
 }
 
-int guardar_estado_sala(char* filename) {
-        int fd = open(filename, O_WRONLY | O_CREAT);
+int guardar_estado_sala(const char* filename) {
+    int fd = open(filename, O_WRONLY | O_CREAT, 0666);
 
-        if (fd == -1) {
-            return -1;
-        }
-        write(fd, &capacity, sizeof(int));
-        write(fd, "\n", sizeof(char));
-
-        for (int i = 0; i < capacity; i++) {
-            write(fd, &room[i], sizeof(int));
-            write(fd, "-", sizeof(char));
-            write(fd, estado_asiento(i), sizeof(int));
-            write(fd, "\n", sizeof(char));
-        }
-
-        close(fd);
-        return 0;
+    if (fd == -1) {
+        return -1;
     }
+    write(fd, &capacity, sizeof(int));
+    write(fd, "\n", sizeof(char));
+
+    for (int i = 0; i < capacity; i++) {
+        write(fd, &i, sizeof(int));
+        write(fd, "-", sizeof(char));
+        write(fd, &room[i], sizeof(int));
+        write(fd, "\n", sizeof(char));
+    }
+
+    close(fd);
+    // Set file permissions to allow read access for all users
+    //chmod(filename, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    return 0;
+}
 
 /*    int recupera_estado_sala(const char* ruta_fichero) {
         FILE* file = fopen(ruta_fichero, "r");
