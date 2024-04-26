@@ -248,7 +248,7 @@ int guarda_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int
 
 int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int* id_asientos) {
 
-    int fd = open(ruta_fichero, O_RDONLY);
+    int fd = open(ruta_fichero, O_RDONLY, 0644);
 
     if (fd == -1) {
         return -1;
@@ -256,6 +256,7 @@ int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, i
     char leeByte[10];
     char acumStrAsiento[10];
     char acumStrPersona[10];
+    lseek(fd, 0, SEEK_SET);
     while (read(fd, leeByte, 1) == 1) {
         if (leeByte[0] == jump) {
             break;
@@ -275,7 +276,7 @@ int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, i
                 break;
             }
             if (flaggi == 1){
-                if (id_asientos[i] == atoi(acumStrAsiento)){
+                /*if (id_asientos[i] == atoi(acumStrAsiento)){
                     while (read(fd, leeByte, 1) == 1) {
                         if (leeByte[0] == jump) {
                             break;
@@ -283,7 +284,7 @@ int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, i
                         strncat(acumStrPersona, leeByte, 1);
                     }
                     room[i] = atoi(acumStrPersona);
-                }
+                }*/
                 flaggi = 0;
             }
             strncat(acumStrAsiento, leeByte, 1);
@@ -297,7 +298,7 @@ int main(int argc, char *argv[]) {
     crea_sala(atoi(argv[1]));
     char *roomName = argv[2];
     printf("======================\nROOM %s\n======================\n", roomName);
-    char commands[11][300] = {"reserva <id-persona>\n", "libera <id_asiento>\n", "estado_asiento <id-asiento>\n", "estado_sala\n", "cerrar_sala\n", "clear\n", "quit\n", "guardar_estado <ruta_fichero>\n", 
+    char commands[11][100] = {"reserva <id-persona>\n", "libera <id_asiento>\n", "estado_asiento <id-asiento>\n", "estado_sala\n", "cerrar_sala\n", "clear\n", "quit\n", "guardar_estado <ruta_fichero>\n", 
     "recuperar_estado <ruta_fichero>\n", "guardar_estadoparcial <ruta_fichero> <n_asientos> <id_asientos>\n", "recuperar_estadoparcial <ruta_fichero> <n_asientos> <id_asientos>\n"};
     int commandsLength = 11;
     char command[300];
