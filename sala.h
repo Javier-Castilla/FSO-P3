@@ -9,5 +9,9 @@ extern int asientos_libres();
 extern int asientos_ocupados();
 extern int capacidad_sala();
 extern int elimina_sala();
+extern int guardar_estado_sala(const char* filename);
+extern int recuperar_estado_sala();
+extern int guardar_estadoparcial_sala();
+extern int recuperar_estadoparcial_sala();
 
 #endif

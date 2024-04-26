@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <fcntl.h>
 
 #define MAX_CAPACITY 2000000 // Capacidas máxima permitida.
@@ -8,6 +9,7 @@
 int capacity = -1;           // Capacidad de la sala actual. -1 indica que no existe sala.
 int occupied = 0;            // Número de asientos ocupados.
 int* room;                   // Representación de la sala.
+char jump = '\n';
 
 /**
  * Se crea una sala con la capacidad indicada.
@@ -147,15 +149,115 @@ void clear()
     while (getchar() != '\n');
 }
 
-#define MAX_LENGTH 34
+int guardar_estado_sala(const char* filename) {
+    int fd = open(filename, O_WRONLY | O_CREAT, 0644);
+
+    if (fd == -1) {
+        return -1;
+    }
+    char p[10];  
+    sprintf(p, "%d", capacity);
+    write(fd, p, strlen(p));
+    write(fd, &jump, 1);
+
+    for (int i = 0; i < capacity; i++) {
+        char p[10];  
+        sprintf(p, "%d", i);
+        write(fd, p, strlen(p));
+        sprintf(p, " %d", room[i]);
+        write(fd, p, strlen(p));
+        write(fd, &jump, 1);
+    }
+
+    close(fd);
+    // Set file permissions to allow read access for all users
+    //chmod(filename, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
+    return 0;
+}
+int recupera_estado_sala(const char* ruta_fichero) {
+    int fd = open(ruta_fichero, O_RDONLY);
+    if (fd == -1) {
+        return -1;
+    }
+    // Read the capacity and occupied variables
+    char leeByte[10];
+    char acumStr[10];
+    memset(acumStr, 0, sizeof(acumStr)); // Initialize acumStr to empty string
+
+    while (read(fd, leeByte, 1) == 1) {
+        if (leeByte[0] == jump) {
+            break;
+        }
+        strncat(acumStr, leeByte, 1); // Append one character at a time to acumStr
+    }
+    capacity = atoi(acumStr);
+    int flaggi = 0;
+    for (int i=0; i < capacity; i++){
+        memset(acumStr, 0, sizeof(acumStr)); // Initialize acumStr to empty string
+        while (read(fd, leeByte, 1) == 1) {
+            if (leeByte[0] == ' ') {
+                flaggi = 1;
+            }
+            if (leeByte[0] == jump) {
+                flaggi = 0;
+                break;
+            }
+            if (flaggi == 1) {
+               strncat(acumStr, leeByte, 1); // Append one character at a time to acumStr
+            }
+        }
+        room[i] = atoi(acumStr);
+        if (room[i] != -1){
+            occupied++;
+        }
+    }
+    // 
+    close(fd);
+    return 0;
+}
+
+/*
+
+    int guarda_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int* id_asientos) {
+        FILE* file = fopen(ruta_fichero, "w");
+        if (file == NULL) {
+            return -1;
+        }
+
+        // Write the state of each seat in id_asientos
+        for (int i = 0; i < num_asientos; i++) {
+            fprintf(file, "%d ", id_asientos[i]);
+        }
+        fprintf(file, "\n");
+
+        fclose(file);
+        return 0;
+    }
+
+    int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int* id_asientos) {
+        FILE* file = fopen(ruta_fichero, "r");
+        if (file == NULL) {
+            return -1;
+        }
+
+        // Read the state of each seat into id_asientos
+        for (int i = 0; i < num_asientos; i++) {
+            fscanf(file, "%d ", &id_asientos[i]);
+        }
+
+        fclose(file);
+        return 0;
+    }
+*/
 
 int main(int argc, char *argv[]) {
     crea_sala(atoi(argv[1]));
     char *roomName = argv[2];
     printf("======================\nROOM %s\n======================\n", roomName);
-    char commands[7][50] = {"reserva <id-persona>\n", "libera <id_asiento>\n", "estado_asiento<id-asiento>\n", "estado_sala\n", "cerrar_sala\n", "clear\n", "quit\n"};
-    int commandsLength = 7;
-    char command[50];
+    char commands[11][100] = {"reserva <id-persona>\n", "libera <id_asiento>\n", "estado_asiento <id-asiento>\n", "estado_sala\n", "cerrar_sala\n", "clear\n", "quit\n", "guardar_estado <ruta_fichero>\n", 
+    "recuperar_estado <ruta_fichero>\n", "guardar_estadoparcial <ruta_fichero> <n_asientos> <id_asientos>\n", "recuperar_estadoparcial <ruta_fichero> <n_asientos> <id_asientos>\n"};
+    int commandsLength = 11;
+    char command[100];
     char *commandStr, *arg;
 
     while (1) {
@@ -164,13 +266,12 @@ int main(int argc, char *argv[]) {
         commandStr = strtok(command, " ");
 
         arg = strtok(NULL, " ");
-        if (strtok(NULL, " ")) {
-            goto nonav;
-        }
 
         if (!strcmp(commandStr, "reserva")) {
+            if (strtok(NULL, " ") != NULL) goto nonav; // si tiene más argumentos, que salte directamente a nonav
             printf("Reservar el asiento: %d\nResultado de la reserva: %d\n", atoi(arg), reserva_asiento(atoi(arg)));
         } else if (!strcmp(commandStr, "libera")) {
+            if (strtok(NULL, " ") != NULL) goto nonav; // si tiene más argumentos, que salte directamente a nonav
             printf("Liberar el asiento: %d\nResultado de la liberación: %d\n", atoi(arg), libera_asiento(atoi(arg)));
         } else if (!strcmp(commandStr, "estado_asiento")) {
             printf(
@@ -182,20 +283,53 @@ int main(int argc, char *argv[]) {
                 "Capacidad de la sala: %d\nAsientos ocupados: %d\nAsientos libres: %d\n",
                 capacidad_sala(), asientos_ocupados(), asientos_libres()
             );
-        } else if (!strcmp(commandStr, "help\n")) {
+        } else if (!strcmp(commandStr, "cerrar_sala\n")) {
+            printf("%s\n", "Cerrando sala...\n");
+            elimina_sala();
+            break;
+        } else if (!strcmp(commandStr, "guardar_estado")) {
+            char* ruta_fichero = strtok(arg, "\n");
+            if (guardar_estado_sala(ruta_fichero) == -1) {
+                printf("Error al guardar el estado de la sala\n");
+            }
+        } else if (!strcmp(commandStr, "recuperar_estado")) {
+            char* ruta_fichero = strtok(arg, "\n");
+            if (recupera_estado_sala(ruta_fichero) == -1) {
+                printf("Error al recuperar el estado de la sala\n");
+            }
+
+        } else if (!strcmp(commandStr, "guardar_estadoparcial")) {
+            char* ruta_fichero = arg;
+            int n_asientos = atoi(strtok(NULL, " "));
+            for (int i=0; i < n_asientos; i++) {
+                int id_asientos = atoi(strtok(NULL, " "));
+            }
+            int id_asientos[n_asientos];
+            for (int i = 0; i < n_asientos; i++) {
+                id_asientos[i] = atoi(strtok(NULL, " "));
+            }
+            /*if (guarda_estadoparcial_sala("estado_parcial.txt", n_asientos, id_asientos) == -1) {
+                printf("Error al guardar el estado parcial de la sala\n");
+            }*/
+
+        } else if (!strcmp(commandStr, "recuperar_estadoparcial")) {
+            
+            printf("Recuperar estado parcial de la sala\n");
+
+        }
+        else if (!strcmp(commandStr, "help\n")) {
             for (int i = 0; i < commandsLength; i++) {
                 printf("----- %s", commands[i]);
             }
-        } else if (!strcmp(commandStr, "guardar_estado\n")) {
-            g
         } else if (!strcmp(commandStr, "clear\n")) {
             printf("\e[1;1H\e[2J");
             printf("======================\nROOM %s\n======================\n", roomName);
-        } else if (!strcmp(commandStr, "quit\n") || !strcmp(commandStr, "cerrar_sala\n")) {
+        } else if (!strcmp(commandStr, "quit\n")) {
             printf("%s\n", "Cerrando sala...\n");
+            elimina_sala();
             break;
         } else {
-nonav:
+            nonav:
             printf("Comando no reconocido\n");
         }
     }
