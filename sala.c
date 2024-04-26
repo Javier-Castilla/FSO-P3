@@ -215,30 +215,53 @@ int recupera_estado_sala(const char* ruta_fichero) {
 
 
 int guarda_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int* id_asientos) {
-    int fd = open(ruta_fichero, O_WRONLY | O_CREAT, 0644);
+    int fd = open(ruta_fichero, O_WRONLY, 0644);
     if (fd == -1) {
         return -1;
     }
-    char p[10];  
-    sprintf(p, "%d", capacity);
-    write(fd, p, strlen(p));
-    write(fd, &jump, 1);
-
-    for (int i = 0; i < capacity; i++) {
-        char p[10];  
-        sprintf(p, "%d", i);
-        write(fd, p, strlen(p));
-        sprintf(p, " %d", room[i]);
-        write(fd, p, strlen(p));
-        write(fd, &jump, 1);
+    char leeByte[10];
+    char acumStrAsiento[10];
+    char acumStrPersona[10];
+    int cont = 0;
+    while (read(fd, leeByte, 1) == 1) {
+        if (leeByte[0] == jump) {
+            break;
+        }
     }
+    memset(acumStrAsiento, 0, strlen(acumStrAsiento));
+    memset(acumStrPersona, 0, strlen(acumStrPersona));
 
-    for (int i = 0; i < num_asientos; i++) {
-        while (lseek(fd, id_asientos[i], SEEK_SET) == -1) {
-            if (lseek(fd, id_asientos[i], SEEK_SET) != -1) {
+    int flaggi = 0;
+    for (int i = 0; i < num_asientos; i++){
+        while (read(fd, leeByte, 1) == 1) {
+            if (leeByte[0] == ' ') {
+                if (id_asientos[i] == atoi(acumStrAsiento)){
+                    flaggi = 1;
+                }
+            } else if (leeByte[0] == jump) {
+                lseek(fd, -cont, SEEK_CUR);
+                for (int j = 0; j <= cont; j++){
+                    write(fd, " ", 1);
+                }
+                lseek(fd, -cont, SEEK_CUR);
+                for (int j = 0; j < cont; j++){
+                    write(fd, acumStrPersona, 1);
+                }
+                flaggi = 0;
                 break;
+            } 
+            if (flaggi == 1){
+                strncat(acumStrPersona, leeByte, 1);
+                cont++;
             }
-
+            else if (flaggi == 0){
+                strncat(acumStrAsiento, leeByte, 1);
+            }
+        }
+    }
+    for (int i = 0; i < capacity; i++) {
+        if (room[i] != -1){
+            occupied++;
         }
     }
 
