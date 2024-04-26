@@ -243,10 +243,11 @@ int guarda_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int
                 for (int j = 0; j <= cont; j++){
                     write(fd, " ", 1);
                 }
-                lseek(fd, -cont, SEEK_CUR);
+                lseek(fd, -cont, SEEK_CUR);/*MIRAR ESTO QUE ESTÁ DELICADO*/
                 for (int j = 0; j < cont; j++){
-                    write(fd, acumStrPersona, 1);
+                    write(fd, &id_asientos[i], 1);
                 }
+                write(fd, &jump, 1);
                 flaggi = 0;
                 break;
             } 
@@ -365,18 +366,19 @@ int main(int argc, char *argv[]) {
             }
 
         } else if (!strcmp(commandStr, "guardar_estadoparcial")) {
-            /*char* ruta_fichero = arg;
             int n_asientos = atoi(strtok(NULL, " "));
-            for (int i=0; i < n_asientos; i++) {
-                int id_asientos = atoi(strtok(NULL, " "));
-            }
-            int id_asientos[n_asientos];
-            for (int i = 0; i < n_asientos; i++) {
-                id_asientos[i] = atoi(strtok(NULL, " "));
-            }
-            if (guarda_estadoparcial_sala("estado_parcial.txt", n_asientos, id_asientos) == -1) {
-                printf("Error al guardar el estado parcial de la sala\n");
+            /*if (n_asientos > capacity) {
+                printf("El tamaño de la sala es inferior al número de IDs a recuperar\n");
+                continue;
             }*/
+            int id_asientos[n_asientos];
+            for (int i=0; i < n_asientos - 1; i++) {
+                id_asientos[i] = atoi(strtok(NULL, " ")); 
+            }
+            id_asientos[n_asientos - 1] = atoi(strtok(NULL, "\n"));
+            if (guarda_estadoparcial_sala(arg, n_asientos, id_asientos) == -1) {
+                printf("Error al guardar el estado parcial de la sala\n");
+            }
         } else if (!strcmp(commandStr, "recuperar_estadoparcial")) {
             int n_asientos = atoi(strtok(NULL, " "));
             if (n_asientos > capacity) {
