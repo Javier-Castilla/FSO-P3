@@ -164,8 +164,7 @@ int guardar_estado_sala(const char* filename) {
         char p[10];  
         sprintf(p, "%d", i);
         write(fd, p, strlen(p));
-        //write(fd, "-", 1);
-        sprintf(p, "%d", room[i]);
+        sprintf(p, " %d", room[i]);
         write(fd, p, strlen(p));
         write(fd, &jump, 1);
     }
@@ -175,24 +174,49 @@ int guardar_estado_sala(const char* filename) {
     //chmod(filename, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH);
     return 0;
 }
-
-/*    int recupera_estado_sala(const char* ruta_fichero) {
-        FILE* file = fopen(ruta_fichero, "r");
-        if (file == NULL) {
-            return -1;
-        }
-
-        // Read the capacity and occupied variables
-        fscanf(file, "%d %d\n", &capacity, &occupied);
-
-        // Read the state of each seat
-        for (int i = 0; i < capacity; i++) {
-            fscanf(file, "%d ", &room[i]);
-        }
-
-        fclose(file);
-        return 0;
+int recupera_estado_sala(const char* ruta_fichero) {
+    int fd = open(ruta_fichero, O_RDONLY);
+    if (fd == -1) {
+        return -1;
     }
+    // Read the capacity and occupied variables
+    char leeByte[10];
+    char acumStr[10];
+    memset(acumStr, 0, sizeof(acumStr)); // Initialize acumStr to empty string
+
+    while (read(fd, leeByte, 1) == 1) {
+        if (leeByte[0] == jump) {
+            break;
+        }
+        strncat(acumStr, leeByte, 1); // Append one character at a time to acumStr
+    }
+    capacity = atoi(acumStr);
+    int flaggi = 0;
+    for (int i=0; i < capacity; i++){
+        memset(acumStr, 0, sizeof(acumStr)); // Initialize acumStr to empty string
+        while (read(fd, leeByte, 1) == 1) {
+            if (leeByte[0] == ' ') {
+                flaggi = 1;
+            }
+            if (leeByte[0] == jump) {
+                flaggi = 0;
+                break;
+            }
+            if (flaggi == 1) {
+               strncat(acumStr, leeByte, 1); // Append one character at a time to acumStr
+            }
+        }
+        room[i] = atoi(acumStr);
+        if (room[i] != -1){
+            occupied++;
+        }
+    }
+    // 
+    close(fd);
+    return 0;
+}
+
+/*
 
     int guarda_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int* id_asientos) {
         FILE* file = fopen(ruta_fichero, "w");
@@ -269,10 +293,10 @@ int main(int argc, char *argv[]) {
                 printf("Error al guardar el estado de la sala\n");
             }
         } else if (!strcmp(commandStr, "recuperar_estado")) {
-            char* ruta_fichero = arg;
-            /*if (recupera_estado_sala("estado_sala.txt") == -1) {
+            char* ruta_fichero = strtok(arg, "\n");
+            if (recupera_estado_sala(ruta_fichero) == -1) {
                 printf("Error al recuperar el estado de la sala\n");
-            }*/
+            }
 
         } else if (!strcmp(commandStr, "guardar_estadoparcial")) {
             char* ruta_fichero = arg;
