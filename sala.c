@@ -262,11 +262,12 @@ int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, i
             break;
         }
     }
-    memset(acumStrAsiento, 0, sizeof(acumStrAsiento));
-    memset(acumStrPersona, 0, sizeof(acumStrPersona));
+    memset(acumStrAsiento, 0, strlen(acumStrAsiento));
+    memset(acumStrPersona, 0, strlen(acumStrPersona));
     
     int flaggi = 0;
     for (int i=0; i < num_asientos; i++){
+        printf("ENTRE\n");
         while (read(fd, leeByte, 1) == 1) {
             if (leeByte[0] == ' ') {
                 flaggi = 1;
