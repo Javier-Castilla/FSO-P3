@@ -5,7 +5,7 @@
 #include <fcntl.h>
 
 #define MAX_CAPACITY 2000000 // Capacidas máxima permitida.
-#define MAX_LENGTH 34
+#define MAX_LENGTH 1000
 int capacity = -1;           // Capacidad de la sala actual. -1 indica que no existe sala.
 int occupied = 0;            // Número de asientos ocupados.
 int* room;                   // Representación de la sala.
@@ -249,14 +249,12 @@ int guarda_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int
 int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int* id_asientos) {
 
     int fd = open(ruta_fichero, O_RDONLY, 0644);
-
     if (fd == -1) {
         return -1;
     }
     char leeByte[10];
     char acumStrAsiento[10];
     char acumStrPersona[10];
-    lseek(fd, 0, SEEK_SET);
     while (read(fd, leeByte, 1) == 1) {
         if (leeByte[0] == jump) {
             break;
@@ -266,43 +264,43 @@ int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, i
     memset(acumStrPersona, 0, strlen(acumStrPersona));
     
     int flaggi = 0;
-    for (int i=0; i < num_asientos; i++){
-        printf("ENTRE\n");
+    for (int i = 0; i < num_asientos; i++){
         while (read(fd, leeByte, 1) == 1) {
             if (leeByte[0] == ' ') {
-                flaggi = 1;
-            }
-            if (leeByte[0] == jump) {
+                if (id_asientos[i] == atoi(acumStrAsiento)){
+                    flaggi = 1;
+                }
+            } else if (leeByte[0] == jump) {
+                room[i] = atoi(acumStrPersona);
                 flaggi = 0;
                 break;
-            }
+            } 
             if (flaggi == 1){
-                /*if (id_asientos[i] == atoi(acumStrAsiento)){
-                    while (read(fd, leeByte, 1) == 1) {
-                        if (leeByte[0] == jump) {
-                            break;
-                        }
-                        strncat(acumStrPersona, leeByte, 1);
-                    }
-                    room[i] = atoi(acumStrPersona);
-                }*/
-                flaggi = 0;
+                strncat(acumStrPersona, leeByte, 1);
             }
-            strncat(acumStrAsiento, leeByte, 1);
+            else if (flaggi == 0){
+                strncat(acumStrAsiento, leeByte, 1);
+            }
+        }
+    }
+    for (int i = 0; i < capacity; i++) {
+        if (room[i] != -1){
+            occupied++;
         }
     }
     close(fd);
     return 0;
 }
 
+
 int main(int argc, char *argv[]) {
     crea_sala(atoi(argv[1]));
     char *roomName = argv[2];
     printf("======================\nROOM %s\n======================\n", roomName);
-    char commands[11][100] = {"reserva <id-persona>\n", "libera <id_asiento>\n", "estado_asiento <id-asiento>\n", "estado_sala\n", "cerrar_sala\n", "clear\n", "quit\n", "guardar_estado <ruta_fichero>\n", 
+    char commands[11][300] = {"reserva <id-persona>\n", "libera <id_asiento>\n", "estado_asiento <id-asiento>\n", "estado_sala\n", "cerrar_sala\n", "clear\n", "quit\n", "guardar_estado <ruta_fichero>\n", 
     "recuperar_estado <ruta_fichero>\n", "guardar_estadoparcial <ruta_fichero> <n_asientos> <id_asientos>\n", "recuperar_estadoparcial <ruta_fichero> <n_asientos> <id_asientos>\n"};
     int commandsLength = 11;
-    char command[300];
+    char command[3000];
     char *commandStr, *arg;
 
     while (1) {
@@ -357,22 +355,20 @@ int main(int argc, char *argv[]) {
                 printf("Error al guardar el estado parcial de la sala\n");
             }*/
         } else if (!strcmp(commandStr, "recuperar_estadoparcial")) {
-            printf("arg: %s\n", arg);
             int n_asientos = atoi(strtok(NULL, " "));
-            int* id_asientos = malloc(n_asientos*(sizeof(int)));
-            printf("n_asientos: %d\n", n_asientos);
-            for (int i=0; i < n_asientos; i++) {
-                id_asientos[i] = atoi(strtok(NULL, " "));
-                if (i == n_asientos - 1) {
-                    id_asientos[i] = atoi(strtok(NULL, "\n"));
-                }
+            if (n_asientos > capacity) {
+                printf("El tamaño de la sala es inferior al número de IDs a recuperar\n");
+                continue;
             }
+            int id_asientos[n_asientos];
+            for (int i=0; i < n_asientos - 1; i++) {
+                id_asientos[i] = atoi(strtok(NULL, " ")); 
+            }
+            id_asientos[n_asientos - 1] = atoi(strtok(NULL, "\n"));
             if (recupera_estadoparcial_sala(arg, n_asientos, id_asientos) == -1){
                 printf("Error al recuperar el estado parcial de la sala\n");
             }
-            free(id_asientos);
-        }
-        else if (!strcmp(commandStr, "help\n")) {
+        } else if (!strcmp(commandStr, "help\n")) {
             for (int i = 0; i < commandsLength; i++) {
                 printf("----- %s", commands[i]);
             }
