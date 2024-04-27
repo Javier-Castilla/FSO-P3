@@ -63,6 +63,10 @@ int crea(char** argv) {
 
         close(fd);
     } else if (!strcmp(argv[0], "-f[o]")) {
+        crea_sala(atoi(capacity));
+        guarda_estado_sala(route);
+
+        /*
         int fd = open(route, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 
         if (fd == -1) {
@@ -84,10 +88,12 @@ int crea(char** argv) {
         }
 
         close(fd);
+        */
     } else {
         fprintf(stderr, "Argumento no reconocido: %s\n", argv[0]);
         exit(-1);
     }
+    
 }
 
 int reserva(char** argv, int idsNumber) {
@@ -392,9 +398,12 @@ int anula(char** argv, int idsNumber) {
 
     lseek(fd, nextFReeOffset - 1, SEEK_SET);
 
-    int aux = open("aux", O_RDWR, 0644);
+    int aux = open("aux", O_RDWR | O_CREAT | O_TRUNC, 0644);
 
-
+    if (fd == -1) {
+        fprintf(stderr, "%s\n", strerror(errno));
+        exit(-1);
+    }
 
     while (1) {
         size_t size = read(fd, buffer, 10);
@@ -403,8 +412,10 @@ int anula(char** argv, int idsNumber) {
         if (size != 10) break;
     }
 
-    char* newFree; 
+    char newFree[20]; 
     sprintf(newFree, "%d", free);
+
+    printf("FRee now: %d", free);
 
     lseek(fd, freeOffset, SEEK_SET);
     write(fd, newFree, strlen(newFree));
