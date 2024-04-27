@@ -269,7 +269,6 @@ int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, i
     if (guarda_estado_sala("aux") == -1) return -1;
 
     int* old = malloc(capacity*sizeof(int));
-    int oldCapacity;
 
     for (int i = 0; i < capacity; i++) {
         old[i] = room[i];
@@ -292,6 +291,13 @@ int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, i
         execlp("rm", "rm", "aux");
     } else {
         wait(NULL);
+    }
+
+    occupied = 0;
+    for (int i = 0; i < capacity; i++) {
+        if (room[i] != -1){
+            occupied++;
+        }
     }
 
     return 0;

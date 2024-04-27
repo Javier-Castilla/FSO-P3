@@ -13,9 +13,9 @@
 
 int crea(char* route, int capacidad, int mode) {
     if (!mode) {
-        int fd = open(route, O_RDONLY | O_EXCL, 0644);
+        int fd = open(route, O_RDONLY, 0644);
 
-        if (fd = -1) {
+        if (fd != -1) {
             fprintf(stderr, "Error, el archivo ya existe: %s\n", route);
             exit(-1);
         }
@@ -25,13 +25,13 @@ int crea(char* route, int capacidad, int mode) {
 
     crea_sala(capacidad);
     guarda_estado_sala(route);
-    printf("Estado guardado en: %s\n", route);
     return 0;
 }
 
 int reserva(char* route, char** argv, int idsNumber) {
     if (capacidad_sala() == asientos_ocupados()) {
-        return 0;
+        fprintf(stderr, "Error al reservar, no hay espacio libre: %s\n");
+        exit(-1);
     }
 
     if (recupera_estado_sala(route) == -1) {
@@ -59,13 +59,24 @@ int anula(char* route, char** argv, int idsNumber) {
         return 0;
     }
 
+    int* noAnulados = malloc(idsNumber*sizeof(int));
+    int index = 0;
+
     if (recupera_estado_sala(route) == -1) {
         fprintf(stderr, "Error al recuperar la sala: %s\n", route);
         exit(-1);
     }
 
     for (int i = 0; i < idsNumber; i++) {
-        libera_asiento(atoi(argv[optind++]));
+        int id = atoi(argv[optind++]);
+        if (id < 0 || id >= getCapacity()) {
+            noAnulados[index++] = id;
+            continue;
+        }
+        if (libera_asiento(id) == -1) {
+            fprintf(stderr, "Error al liberar asiento: %d\n", id);
+            exit(-1);
+        }
     }
 
     if (guarda_estado_sala(route) == -1) {
@@ -73,6 +84,16 @@ int anula(char* route, char** argv, int idsNumber) {
         exit(-1);
     }
 
+    if (index != 0) {
+        fprintf(stderr, "Error al anular algunas reservas con los siguientes IDs: ");
+        for (int i = 0; i < index; i++) {
+            fprintf(stderr, "%d ", noAnulados[i]);
+        }
+        fprintf(stderr, "\n");
+        exit(-1);
+    }
+
+    free(noAnulados);
     return 0;
 }
 
@@ -114,6 +135,34 @@ int estado(char* route) {
     return 0;
 }
 
+int compare(char* route1, char* route2) {
+    int fd1 = open(route1, O_RDONLY, 0644);
+    int fd2 = open(route2, O_RDONLY, 0644);
+    char buffer1[10];
+    char buffer2[10];
+
+    if (fd1 == -1) {
+        fprintf(stderr, "Error al abrir el archivo de la sala: %s\n", route1);
+        exit(-1);
+    }
+
+    if (fd2 == -1) {
+        fprintf(stderr, "Error al abrir el archivo de la sala: %s\n", route2);
+        exit(-1);
+    }
+
+    while (1) {
+        size_t size1 = read(fd1, buffer1, 10);
+        size_t size2 = read(fd2, buffer2, 10);
+
+        if (memcmp(buffer1, buffer2, sizeof(buffer1))) return 1;
+
+        if (size1 != 10) break;
+    }
+
+    return 0;
+}
+
 int main(int argc, char** argv) {
 
     if (argc < 3) {
@@ -123,6 +172,7 @@ int main(int argc, char** argv) {
 
     char* command = argv[1];
     char* route;
+    char* anotherRoute;
     int fileMode;
     int capacidad;
     int lastArg = -1;
@@ -132,14 +182,19 @@ int main(int argc, char** argv) {
         switch (opt)
         {
         case 'f':
-            if (!strcmp(optarg, "[o]")) {
+            if (!strcmp(optarg, "o")) {
                 if (strcmp(command, "crea")) {
-                    fprintf(stderr, "Argumento no válido con esta orden: %c\n", opt);
+                    fprintf(stderr, "Argumento no válido con esta orden: -%c\n", opt);
                     exit(-1);
                 }
                 fileMode = 1;
                 route = argv[optind];
             } else {
+                if (strcmp(argv[2], "-f")) {
+                    fprintf(stderr, "Argumento no válido con esta orden: %s\n", argv[2]);
+                    exit(-1);
+                }
+
                 fileMode = 0;
                 route = optarg;
             }
@@ -190,6 +245,12 @@ int main(int argc, char** argv) {
         }
     } else if (!strcmp(command, "estado")) {
         estado(route);
+    } else if (!strcmp(command, "compara")) {
+        optind++;
+        route = argv[optind++];
+        anotherRoute = argv[optind++];
+        int rs = compare(route, anotherRoute);
+        printf("%d\n", rs);
     } else {
         fprintf(stderr, "Orden no reconocida: %s\n", command);
         exit(-1);
