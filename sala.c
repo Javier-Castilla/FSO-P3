@@ -3,6 +3,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <sys/wait.h>
 
 #define MAX_CAPACITY 2000000 // Capacidas máxima permitida.
 #define MAX_LENGTH 1000
@@ -154,7 +155,7 @@ void clear()
 }
 
 int guarda_estado_sala(const char* filename) {
-    int fd = open(filename, O_WRONLY | O_CREAT, 0644);
+    int fd = open(filename, O_WRONLY | O_CREAT | O_TRUNC, 0644);
 
     if (fd == -1) {
         return -1;
@@ -181,6 +182,7 @@ int recupera_estado_sala(const char* ruta_fichero) {
     if (fd == -1) {
         return -1;
     }
+
     char leeByte[10];
     char acumStr[10];
     memset(acumStr, 0, sizeof(acumStr));
@@ -191,23 +193,31 @@ int recupera_estado_sala(const char* ruta_fichero) {
         }
         strncat(acumStr, leeByte, 1); 
     }
-    capacity = atoi(acumStr);
+
+    elimina_sala();
+    crea_sala(atoi(acumStr));
     int flaggi = 0;
+
     for (int i=0; i < capacity; i++){
         memset(acumStr, 0, sizeof(acumStr)); 
         while (read(fd, leeByte, 1) == 1) {
             if (leeByte[0] == ' ') {
                 flaggi = 1;
+                continue;
             }
+
             if (leeByte[0] == jump) {
                 flaggi = 0;
                 break;
             }
+
             if (flaggi == 1) {
                strncat(acumStr, leeByte, 1);
             }
         }
+
         room[i] = atoi(acumStr);
+
         if (room[i] != -1){
             occupied++;
         }
@@ -219,103 +229,70 @@ int recupera_estado_sala(const char* ruta_fichero) {
 
 
 int guarda_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int* id_asientos) {
-    int fd = open(ruta_fichero, O_WRONLY, 0644);
-    if (fd == -1) {
-        return -1;
-    }
-    char leeByte[10];
-    char acumStrAsiento[10];
-    char acumStrPersona[10];
-    int cont = 0;
-    while (read(fd, leeByte, 1) == 1) {
-        if (leeByte[0] == jump) {
-            break;
-        }
-    }
-    memset(acumStrAsiento, 0, strlen(acumStrAsiento));
-    memset(acumStrPersona, 0, strlen(acumStrPersona));
+    if (guarda_estado_sala("aux") == -1) return -1;
 
-    int flaggi = 0;
-    for (int i = 0; i < num_asientos; i++){
-        while (read(fd, leeByte, 1) == 1) {
-            if (leeByte[0] == ' ') {
-                if (id_asientos[i] == atoi(acumStrAsiento)){
-                    flaggi = 1;
-                }
-            } else if (leeByte[0] == jump) {
-                lseek(fd, -cont, SEEK_CUR);
-                for (int j = 0; j <= cont; j++){
-                    write(fd, " ", 1);
-                }
-                lseek(fd, -cont, SEEK_CUR);/*MIRAR ESTO QUE ESTÁ DELICADO*/
-                for (int j = 0; j < cont; j++){
-                    write(fd, &id_asientos[i], 1);
-                }
-                write(fd, &jump, 1);
-                flaggi = 0;
-                break;
-            } 
-            if (flaggi == 1){
-                strncat(acumStrPersona, leeByte, 1);
-                cont++;
-            }
-            else if (flaggi == 0){
-                strncat(acumStrAsiento, leeByte, 1);
-            }
-        }
-    }
+    int* old = malloc(capacity*sizeof(int));
+
     for (int i = 0; i < capacity; i++) {
-        if (room[i] != -1){
-            occupied++;
-        }
+        old[i] = room[i];
     }
 
-    close(fd);
+    if (recupera_estado_sala(ruta_fichero) == -1) return -1;
+
+    for (int i = 0; i < num_asientos; i++) {
+        libera_asiento(id_asientos[i]);
+        reserva_asiento(old[id_asientos[i]]);
+    }
+
+    if (guarda_estado_sala(ruta_fichero) == -1) return -1;
+
+    if (recupera_estado_sala("aux") == -1) return -1;
+
+    if (fork() == 0) {
+        execlp("rm", "rm", "aux");
+    } else {
+        wait(NULL);
+    }
+
+    return 0;
+}
+
+static int contains(int* asientos, int size, int id) {
+    for (int i = 0; i < size; i++) {
+        if (asientos[i] == id) return 1;
+    }
+
     return 0;
 }
 
 int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int* id_asientos) {
+    if (guarda_estado_sala("aux") == -1) return -1;
 
-    int fd = open(ruta_fichero, O_RDONLY, 0644);
-    if (fd == -1) {
-        return -1;
-    }
-    char leeByte[10];
-    char acumStrAsiento[10];
-    char acumStrPersona[10];
-    while (read(fd, leeByte, 1) == 1) {
-        if (leeByte[0] == jump) {
-            break;
-        }
-    }
-    memset(acumStrAsiento, 0, strlen(acumStrAsiento));
-    memset(acumStrPersona, 0, strlen(acumStrPersona));
-    
-    int flaggi = 0;
-    for (int i = 0; i < num_asientos; i++){
-        while (read(fd, leeByte, 1) == 1) {
-            if (leeByte[0] == ' ') {
-                if (id_asientos[i] == atoi(acumStrAsiento)){
-                    flaggi = 1;
-                }
-            } else if (leeByte[0] == jump) {
-                room[i] = atoi(acumStrPersona);
-                flaggi = 0;
-                break;
-            } 
-            if (flaggi == 1){
-                strncat(acumStrPersona, leeByte, 1);
-            }
-            else if (flaggi == 0){
-                strncat(acumStrAsiento, leeByte, 1);
-            }
-        }
-    }
+    int* old = malloc(capacity*sizeof(int));
+    int oldCapacity;
+
     for (int i = 0; i < capacity; i++) {
-        if (room[i] != -1){
-            occupied++;
-        }
+        old[i] = room[i];
     }
-    close(fd);
+
+    if (recupera_estado_sala(ruta_fichero) == -1) return -1;
+
+    for (int i = 0; i < num_asientos; i++) {
+        old[id_asientos[i]] = estado_asiento(id_asientos[i]);
+    }
+
+    if (recupera_estado_sala("aux") == -1) return -1;
+
+    for (int i = 0; i < num_asientos; i++) {
+        libera_asiento(id_asientos[i]);
+        room[id_asientos[i]] = old[id_asientos[i]];
+    }
+
+    if (fork() == 0) {
+        execlp("rm", "rm", "aux");
+    } else {
+        wait(NULL);
+    }
+
     return 0;
 }

@@ -38,7 +38,7 @@ int main() {
     pid_t pid = fork();
 
     if (pid == 0) {
-        char *compile_cmd[] = {"gcc", "sala.c", "-o", "sala", NULL};
+        char *compile_cmd[] = {"gcc", "minishellsala.c", "sala.c", "-o", "sala", NULL};
         execvp("gcc", compile_cmd);
     }
     
