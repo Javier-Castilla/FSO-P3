@@ -50,22 +50,37 @@ int main(int argc, char *argv[]) {
             elimina_sala();
             break;
         } else if (!strcmp(commandStr, "guardar_estado")) {
-            char* ruta_fichero = strtok(arg, "\n");
+            if (strtok(NULL, " ") != NULL) goto nonav; // si tiene más argumentos, que salte directamente a nonav
+            char* ruta_fichero = arg;
+            int pos_nueva_linea = strcspn(ruta_fichero, "\n");
+    
+            // Si se encontró un carácter de nueva línea, se reemplaza con '\0'
+            if (ruta_fichero[pos_nueva_linea] == '\n') {
+                ruta_fichero[pos_nueva_linea] = '\0';
+            }
+
             if (guarda_estado_sala(ruta_fichero) == -1) {
                 printf("Error al guardar el estado de la sala\n");
             }
         } else if (!strcmp(commandStr, "recuperar_estado")) {
-            char* ruta_fichero = strtok(arg, "\n");
+            if (strtok(NULL, " ") != NULL) goto nonav; // si tiene más argumentos, que salte directamente a nonav
+            char* ruta_fichero = arg;
+            int pos_nueva_linea = strcspn(ruta_fichero, "\n");
+    
+            // Si se encontró un carácter de nueva línea, se reemplaza con '\0'
+            if (ruta_fichero[pos_nueva_linea] == '\n') {
+                ruta_fichero[pos_nueva_linea] = '\0';
+            }
+
             if (recupera_estado_sala(ruta_fichero) == -1) {
                 printf("Error al recuperar el estado de la sala\n");
             }
-
         } else if (!strcmp(commandStr, "guardar_estadoparcial")) {
             int n_asientos = atoi(strtok(NULL, " "));
-            /*if (n_asientos > capacity) {
+            if (n_asientos > getCapacity()) {
                 printf("El tamaño de la sala es inferior al número de IDs a recuperar\n");
                 continue;
-            }*/
+            }
             int id_asientos[n_asientos];
             for (int i=0; i < n_asientos - 1; i++) {
                 id_asientos[i] = atoi(strtok(NULL, " ")); 

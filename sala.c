@@ -160,6 +160,7 @@ int guarda_estado_sala(const char* filename) {
     if (fd == -1) {
         return -1;
     }
+
     char p[10];  
     sprintf(p, "%d", capacity);
     write(fd, p, strlen(p));
@@ -178,7 +179,8 @@ int guarda_estado_sala(const char* filename) {
     return 0;
 }
 int recupera_estado_sala(const char* ruta_fichero) {
-    int fd = open(ruta_fichero, O_RDONLY);
+    int fd = open(ruta_fichero, O_RDONLY, 0644);
+    
     if (fd == -1) {
         return -1;
     }
