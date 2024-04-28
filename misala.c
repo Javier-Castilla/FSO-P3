@@ -55,16 +55,18 @@ int reserva(char* route, char** argv, int idsNumber) {
 }
 
 int anula(char* route, char** argv, int idsNumber) {
-    if (capacidad_sala() == 0) {
-        return 0;
-    }
-
     int* noAnulados = malloc(idsNumber*sizeof(int));
     int index = 0;
 
     if (recupera_estado_sala(route) == -1) {
         fprintf(stderr, "Error al recuperar la sala: %s\n", route);
+        free(noAnulados);
         exit(-1);
+    }
+
+    if (capacidad_sala() == 0) {
+        free(noAnulados);
+        return 0;
     }
 
     for (int i = 0; i < idsNumber; i++) {
@@ -75,12 +77,14 @@ int anula(char* route, char** argv, int idsNumber) {
         }
         if (libera_asiento(id) == -1) {
             fprintf(stderr, "Error al liberar asiento: %d\n", id);
+            free(noAnulados);
             exit(-1);
         }
     }
 
     if (guarda_estado_sala(route) == -1) {
         fprintf(stderr, "Error al guardar la sala: %s\n", route);
+        free(noAnulados);
         exit(-1);
     }
 
@@ -90,6 +94,7 @@ int anula(char* route, char** argv, int idsNumber) {
             fprintf(stderr, "%d ", noAnulados[i]);
         }
         fprintf(stderr, "\n");
+        free(noAnulados);
         exit(-1);
     }
 
@@ -103,21 +108,43 @@ int anula_personas(char* route, char** argv, int idsNumber) {
         exit(-1);
     }
 
+    int* noAnulados = malloc(idsNumber*sizeof(int));
+    int index = 0;
+
     if (capacidad_sala() == 0) {
+        free(noAnulados);
         return 0;
     }
 
     for (int i = 0; i < idsNumber; i++) {
+        int flag = 0;
         for (int j = 0; j < capacidad_sala(); j++) {
             if (estado_asiento(j) == atoi(argv[optind])) {
-                libera_asiento(j);
+                if (libera_asiento(j) == -1) {
+                    fprintf(stderr, "Error al anular a persona: %s\n", atoi(argv[optind]));
+                    exit(-1);
+                }
+                flag = 1;
             }
+        }
+        if (!flag) {
+            noAnulados[index++] = atoi(argv[optind]);
         }
         optind++;
     }
 
     if (guarda_estado_sala(route) == -1) {
         fprintf(stderr, "Error al guardar la sala: %s\n", route);
+        exit(-1);
+    }
+
+    if (index != 0) {
+        fprintf(stderr, "Error al anular algunas reservas con los siguientes IDs: ");
+        for (int i = 0; i < index; i++) {
+            fprintf(stderr, "%d ", noAnulados[i]);
+        }
+        fprintf(stderr, "\n");
+        free(noAnulados);
         exit(-1);
     }
 

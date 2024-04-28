@@ -241,7 +241,7 @@ int guarda_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int
 
     for (int i = 0; i < num_asientos; i++) {
         libera_asiento(id_asientos[i]);
-        reserva_asiento(old[id_asientos[i]]);
+        room[id_asientos[i]] = old[id_asientos[i]];
     }
 
     if (guarda_estado_sala(ruta_fichero) == -1) return -1;
