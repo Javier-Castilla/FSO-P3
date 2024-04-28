@@ -251,5 +251,11 @@ int main()
 	
 	ejecuta_tests();
 	
+	if (fork() == 0) {
+    		execlp("rm", "rm", "salon.txt", "test_sala_parcial.txt", "test_sala.txt", "test2_sala.txt", "test4_sala.txt", "test5_sala.txt", NULL);
+    	} else {
+    		wait(NULL);
+    	}
+	
 	puts("Batería de test completa.");
 }

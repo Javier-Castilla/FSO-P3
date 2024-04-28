@@ -180,7 +180,7 @@ int guarda_estado_sala(const char* filename) {
 }
 int recupera_estado_sala(const char* ruta_fichero) {
     int fd = open(ruta_fichero, O_RDONLY, 0644);
-    
+
     if (fd == -1) {
         return -1;
     }
@@ -251,7 +251,7 @@ int guarda_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, int
     if (recupera_estado_sala("aux") == -1) return -1;
 
     if (fork() == 0) {
-        execlp("rm", "rm", "aux");
+        execlp("rm", "rm", "aux", NULL);
     } else {
         wait(NULL);
     }
@@ -290,7 +290,7 @@ int recupera_estadoparcial_sala(const char* ruta_fichero, size_t num_asientos, i
     }
 
     if (fork() == 0) {
-        execlp("rm", "rm", "aux");
+        execlp("rm", "rm", "aux", NULL);
     } else {
         wait(NULL);
     }
